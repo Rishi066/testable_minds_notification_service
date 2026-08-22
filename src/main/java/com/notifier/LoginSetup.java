@@ -7,18 +7,19 @@ import com.microsoft.playwright.options.Cookie;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class LoginSetup
 {
-    private static final String COOKIE_FILE = "cookies.json";
+    public static final String COOKIE_FILE = "cookies.json";
 
     public static void main(String[] args) throws IOException
     {
-        try(Playwright playwright = Playwright.create())
+        /*try(Playwright playwright = Playwright.create())
         {
-            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false));
+            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setChannel("chrome").setHeadless(false));
             BrowserContext context = browser.newContext();
             Page page = context.newPage();
 
@@ -42,6 +43,19 @@ public class LoginSetup
 
             System.out.println("Saved " + cookies.size() + " cookies to " + COOKIE_FILE);
             browser.close();
+        }*/
+
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Enter the session cookie extracted: ");
+        List<Cookie> cookies = new ArrayList<>();
+        cookies.add(new Cookie("testable_minds_session",sc.nextLine()));
+
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try(FileWriter writer = new FileWriter(COOKIE_FILE))
+        {
+            gson.toJson(cookies,writer);
         }
+
+        System.out.println("Saved " + cookies.size() + " cookies to " + COOKIE_FILE);
     }
 }

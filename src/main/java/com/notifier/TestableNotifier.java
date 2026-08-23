@@ -109,7 +109,7 @@ public class TestableNotifier
             if (SystemTray.isSupported())
             {
                 SystemTray tray = SystemTray.getSystemTray();
-                Image image = Toolkit.getDefaultToolkit().createImage(new byte[0]);
+                Image image = Toolkit.getDefaultToolkit().getImage("TM_icon.png");
                 TrayIcon trayIcon = new TrayIcon(image, "Testable Notifier");
                 trayIcon.setImageAutoSize(true);
                 tray.add(trayIcon);

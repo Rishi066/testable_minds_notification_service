@@ -21,6 +21,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.*;
+import javax.swing.*;
+import javax.swing.Timer;
 import java.util.List;
 
 public class TestableNotifier
@@ -39,7 +41,10 @@ public class TestableNotifier
     public static Gson gson = new Gson();
     public static Random random = new Random();
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception
+    {
+        System.setProperty("apple.awt.UIElement", "true");
+
         CookieManager cookieManager = loadCookies();
 
         HttpClient client = HttpClient.newBuilder()
@@ -103,33 +108,67 @@ public class TestableNotifier
     }
 
     //notifier
-    static void notify(String title,String message)
+    static void notify(String title, String message)
     {
-        try {
-            if (SystemTray.isSupported())
-            {
-                SystemTray tray = SystemTray.getSystemTray();
-                Image image = Toolkit.getDefaultToolkit().getImage("TM_icon.png");
-                TrayIcon trayIcon = new TrayIcon(image, "Testable Notifier");
-                trayIcon.setImageAutoSize(true);
-                tray.add(trayIcon);
-                trayIcon.displayMessage(title, message, TrayIcon.MessageType.INFO);
-                // remove after a short delay so icons don't pile up
-                new Thread(() -> {
-                    try { Thread.sleep(15000); } catch (InterruptedException ignored) {}
-                    tray.remove(trayIcon);
-                }).start();
-            }
-            else
-            {
-                System.out.println("[!] System tray not supported on this platform.");
-            }
-        }
-        catch (Exception e)
-        {
-            System.out.println("[!] Desktop notification failed: " + e.getMessage());
-        }
         System.out.println("[NOTIFY] " + title + ": " + message);
+
+        SwingUtilities.invokeLater(() -> showPopup(title, message));
+    }
+
+
+    private static JFrame hiddenOwner;
+    private static JFrame getHiddenOwner()
+    {
+        if (hiddenOwner == null)
+        {
+            hiddenOwner = new JFrame();
+            hiddenOwner.setUndecorated(true);
+            hiddenOwner.setType(Window.Type.UTILITY); // hints to some window managers this isn't a "real" app window
+            hiddenOwner.setSize(0, 0);
+            hiddenOwner.setLocation(-10, -10); // fully off-screen just in case
+            // never call setVisible(true) on this — it stays invisible forever
+        }
+        return hiddenOwner;
+    }
+
+    private static void showPopup(String title, String message)
+    {
+        JWindow popup = new JWindow(getHiddenOwner()); // <-- owned window, no taskbar entry
+        popup.setAlwaysOnTop(true);
+        popup.setFocusableWindowState(false); // <-- doesn't steal focus / slide over your active window
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(new Color(30, 30, 30));
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 18, 14, 18));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 14f));
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel messageLabel = new JLabel("<html><body style='width: 240px'>" + message + "</body></html>");
+        messageLabel.setForeground(Color.LIGHT_GRAY);
+        messageLabel.setFont(messageLabel.getFont().deriveFont(12f));
+        messageLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        messageLabel.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
+
+        panel.add(titleLabel);
+        panel.add(messageLabel);
+        popup.getContentPane().add(panel);
+        popup.pack();
+
+        Rectangle screen = GraphicsEnvironment.getLocalGraphicsEnvironment()
+                .getMaximumWindowBounds();
+        int x = screen.x + screen.width - popup.getWidth() - 24;
+        int y = screen.y + screen.height - popup.getHeight() - 24;
+        popup.setLocation(x, y);
+
+        popup.setVisible(true);
+
+        Timer timer = new Timer(6000, e -> popup.dispose());
+        timer.setRepeats(false);
+        timer.start();
     }
 
     //to parse studies from the study page
@@ -150,7 +189,7 @@ public class TestableNotifier
             Element titleEl = card.selectFirst("div.test-title");
             if(titleEl == null) continue;
             String title = titleEl.text().trim();
-            if(title.equals("Invite Friends and Earn $1!")) continue;
+//            if(title.equals("Invite Friends and Earn $1!")) continue;
             if(title.isEmpty()) continue;
 
             Element researcherLink = card.selectFirst("a[href*=/researcher/]");

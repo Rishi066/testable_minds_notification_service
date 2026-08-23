@@ -3,6 +3,13 @@ package com.notifier;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+
+import java.awt.*;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.net.CookieManager;
@@ -14,6 +21,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.*;
+import java.util.List;
 
 public class TestableNotifier
 {
@@ -23,8 +31,14 @@ public class TestableNotifier
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
     public static final int BASE_INTERVAL = 40;
+    public static final double LONG_BREAK_CHANCE = 0.08;
+    public static final int JITTER_SEC = 15;
+    public static final int LONG_BREAK_MIN_SEC = 120;
+    public static final int LONG_BREAK_MAX_SEC = 300;
 
     public static Gson gson = new Gson();
+    public static Random random = new Random();
+
     public static void main(String[] args) throws Exception {
         CookieManager cookieManager = loadCookies();
 
@@ -59,7 +73,7 @@ public class TestableNotifier
 
                 if(newOnes.isEmpty())
                 {
-                    System.out.printf("[%s] No new Studies. (%d currently listed)",new Date(),current.size());
+                    System.out.printf("[%s] No new Studies. (%d currently listed)\n",new Date(),current.size());
                 }
                 else {
                     for (String title : newOnes.values()) {
@@ -91,18 +105,75 @@ public class TestableNotifier
     //notifier
     static void notify(String title,String message)
     {
-
+        try {
+            if (SystemTray.isSupported())
+            {
+                SystemTray tray = SystemTray.getSystemTray();
+                Image image = Toolkit.getDefaultToolkit().createImage(new byte[0]);
+                TrayIcon trayIcon = new TrayIcon(image, "Testable Notifier");
+                trayIcon.setImageAutoSize(true);
+                tray.add(trayIcon);
+                trayIcon.displayMessage(title, message, TrayIcon.MessageType.INFO);
+                // remove after a short delay so icons don't pile up
+                new Thread(() -> {
+                    try { Thread.sleep(15000); } catch (InterruptedException ignored) {}
+                    tray.remove(trayIcon);
+                }).start();
+            }
+            else
+            {
+                System.out.println("[!] System tray not supported on this platform.");
+            }
+        }
+        catch (Exception e)
+        {
+            System.out.println("[!] Desktop notification failed: " + e.getMessage());
+        }
+        System.out.println("[NOTIFY] " + title + ": " + message);
     }
 
     //to parse studies from the study page
     static Map<String,String> parseStudies(String html)
     {
+        Map<String,String> studies = new LinkedHashMap<>();
+        Document doc = Jsoup.parse(html);
 
+        Elements cards = doc.select("div.one-test");
+
+        for(Element card : cards)
+        {
+            if(card.hasClass("one-test-example"))
+            {
+                continue;
+            }
+
+            Element titleEl = card.selectFirst("div.test-title");
+            if(titleEl == null) continue;
+            String title = titleEl.text().trim();
+            if(title.equals("Invite Friends and Earn $1!")) continue;
+            if(title.isEmpty()) continue;
+
+            Element researcherLink = card.selectFirst("a[href*=/researcher/]");
+            String href = researcherLink != null ? researcherLink.attr("href") : "";
+
+            studies.put(href + " :: " + title,title);
+        }
+        return studies;
     }
 
     //to intimate human behavior
-    static long humanDelaySeconds(int backoff)
+    static int humanDelaySeconds(int backoff)
     {
+        if(backoff != BASE_INTERVAL) return backoff;
+
+        if(random.nextDouble() < LONG_BREAK_CHANCE)
+        {
+            int pause = LONG_BREAK_MIN_SEC + random.nextInt(LONG_BREAK_MAX_SEC - LONG_BREAK_MIN_SEC);
+            System.out.println("[..] Taking a longer break (" + pause + "s");
+            return pause;
+        }
+        int jitter = -JITTER_SEC + random.nextInt(2*JITTER_SEC + 1);
+        return Math.max(10,BASE_INTERVAL + jitter);
 
     }
 

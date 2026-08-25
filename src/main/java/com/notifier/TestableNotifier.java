@@ -21,6 +21,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.*;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.swing.*;
 import javax.swing.Timer;
 import java.util.List;
@@ -164,11 +167,32 @@ public class TestableNotifier
         int y = screen.y + screen.height - popup.getHeight() - 24;
         popup.setLocation(x, y);
 
+        playNotificationSound();
+
         popup.setVisible(true);
 
         Timer timer = new Timer(6000, e -> popup.dispose());
         timer.setRepeats(false);
         timer.start();
+    }
+
+    private static void playNotificationSound()
+    {
+        try
+        {
+            File soundFile = new File("excuse_me.wav");
+            if (soundFile.exists())
+            {
+                AudioInputStream audioIn = AudioSystem.getAudioInputStream(soundFile);
+                Clip clip = AudioSystem.getClip();
+                clip.open(audioIn);
+                clip.start();
+            }
+        }
+        catch (Exception e)
+        {
+            System.out.println("[!] Could not play sound: " + e.getMessage());
+        }
     }
 
     //to parse studies from the study page
@@ -208,8 +232,8 @@ public class TestableNotifier
         if(random.nextDouble() < LONG_BREAK_CHANCE)
         {
             int pause = LONG_BREAK_MIN_SEC + random.nextInt(LONG_BREAK_MAX_SEC - LONG_BREAK_MIN_SEC);
-            System.out.println("[..] Taking a longer break (" + pause + "s");
-            return pause;
+            System.out.println("[..] Taking a longer break (" + pause/2 + "s");
+            return pause/2;
         }
         int jitter = -JITTER_SEC + random.nextInt(2*JITTER_SEC + 1);
         return Math.max(10,BASE_INTERVAL + jitter);

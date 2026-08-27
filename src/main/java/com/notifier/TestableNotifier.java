@@ -1,6 +1,7 @@
 package com.notifier;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 
 import org.jsoup.Jsoup;
@@ -35,6 +36,7 @@ public class TestableNotifier
     public static final String STUDIES_URL = "https://minds.testable.org/browse";
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
+    //You are free to change values as per your required speed
     public static final int BASE_INTERVAL = 40;
     public static final double LONG_BREAK_CHANCE = 0.08;
     public static final int JITTER_SEC = 15;
@@ -57,7 +59,8 @@ public class TestableNotifier
 
         Map<String, String> seen = loadSeen();
         int backoff = BASE_INTERVAL;
-        while (true) {
+         while (true)
+         {
             try
             {
                 String html = fetchStudiesPage(client);
@@ -66,7 +69,10 @@ public class TestableNotifier
                 {
                     System.out.println("[!] Session Expired. Run LoginSetup again [!]");
                     notify("Notifier Stopped","Session Expired. Re-run LoginSetup");
-                    return;
+
+                    //sleeping main thread so notification is processed
+                    Thread.sleep(4000);
+                    System.exit(0);
                 }
 
                 Map<String,String> current = parseStudies(html);
@@ -83,8 +89,10 @@ public class TestableNotifier
                 {
                     System.out.printf("[%s] No new Studies. (%d currently listed)\n",new Date(),current.size());
                 }
-                else {
-                    for (String title : newOnes.values()) {
+                else
+                {
+                    for (String title : newOnes.values())
+                    {
                         notify("New TM Study!", title);
                     }
                     seen.putAll(current);
@@ -95,8 +103,12 @@ public class TestableNotifier
             catch(IOException | InterruptedException e)
             {
                 System.out.println("[!] Request failed: " + e.getMessage());
+
+                //You are free to change values as per your required speed
                 backoff = Math.min(backoff*2,600);
             }
+
+            //mimic human delay
             Thread.sleep(1000L * humanDelaySeconds(backoff));
         }
     }
@@ -171,6 +183,7 @@ public class TestableNotifier
 
         popup.setVisible(true);
 
+        //notification popup timer
         Timer timer = new Timer(6000, e -> popup.dispose());
         timer.setRepeats(false);
         timer.start();
@@ -180,7 +193,7 @@ public class TestableNotifier
     {
         try
         {
-            File soundFile = new File("excuse_me.wav");
+            File soundFile = new File("notification_effect.wav");
             if (soundFile.exists())
             {
                 AudioInputStream audioIn = AudioSystem.getAudioInputStream(soundFile);
@@ -213,7 +226,8 @@ public class TestableNotifier
             Element titleEl = card.selectFirst("div.test-title");
             if(titleEl == null) continue;
             String title = titleEl.text().trim();
-//            if(title.equals("Invite Friends and Earn $1!")) continue;
+
+            if(title.equals("Invite Friends and Earn $1!")) continue;
             if(title.isEmpty()) continue;
 
             Element researcherLink = card.selectFirst("a[href*=/researcher/]");
@@ -274,7 +288,7 @@ public class TestableNotifier
     }
 
     //loads cookies from cookies.json into cookie manager
-    static CookieManager loadCookies() throws IOException
+    static CookieManager loadCookies() throws Exception
     {
         CookieManager manager = new CookieManager();
         manager.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
@@ -282,7 +296,7 @@ public class TestableNotifier
         File file = new File(COOKIE_FILE);
         if(!file.exists())
         {
-            System.out.println(COOKIE_FILE + " not found." +"\nRun LoginSetup first and try again");
+            System.out.println("[!] " + COOKIE_FILE + " NOT FOUND." +"\nRUN LoginSetup FIRST AND TRY AGAIN [!]");
             System.exit(1);
         }
 
@@ -290,7 +304,10 @@ public class TestableNotifier
         {
             Type listType = new TypeToken<List<Map<String,Object>>>(){}.getType();
             List<Map<String,Object>> rawCookies = gson.fromJson(reader,listType);
-
+            if(rawCookies == null)
+            {
+                throw new JsonParseException("[!] NO COOKIES FOUND IN COOKIES FILE. PLEASE RUN LoginSetup. [!]");
+            }
             for(Map<String,Object> cookie : rawCookies)
             {
                 String name = (String) cookie.get("name");
@@ -302,6 +319,10 @@ public class TestableNotifier
 
                 manager.getCookieStore().add(URI.create("https://minds.testable.org"),httpCookie);
             }
+        }
+        catch(Exception e)
+        {
+            System.out.println(e.getMessage());
         }
         return manager;
     }

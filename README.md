@@ -24,7 +24,7 @@ If not installed:
 
 1. Copy this whole project folder to your computer (download as zip & unzip it (OR) git clone).
 
-2. Get your session cookies for minds.testable.org by running:
+2. Get your session cookies for minds.testable.org by running from the project folder:
 ```
 mvn compile exec:java -Dexec.mainClass=com.notifier.LoginSetup  
 ```

@@ -233,7 +233,10 @@ public class TestableNotifier
             Element researcherLink = card.selectFirst("a[href*=/researcher/]");
             String href = researcherLink != null ? researcherLink.attr("href") : "";
 
-            studies.put(href + " :: " + title,title);
+            Element studyContent = card.selectFirst("div.test-content");
+            String description = studyContent != null ? studyContent.text().trim() : "";
+
+            studies.put(href + " :: " + title + " :: " + description,title);
         }
         return studies;
     }

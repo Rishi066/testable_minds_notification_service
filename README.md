@@ -1,3 +1,6 @@
+**!!!For educational purposes only. This content is intended solely for learning and informational purposes and should not be considered professional advice or a recommendation to take any action.!!!**
+
+
 # Testable Minds Study Notifier
 
 Watches your Testable Minds dashboard and pops up a desktop notification the moment a new study becomes available, instead of waiting on their delayed notifications :)

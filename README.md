@@ -24,15 +24,21 @@ If not installed:
 
 1. Copy this whole project folder to your computer (download as zip & unzip it (OR) git clone).
 
-2. Get your session cookies for minds.testable.org:  
+2. Get your session cookies for minds.testable.org by running:
+```
+mvn compile exec:java -Dexec.mainClass=com.notifier.LoginSetup  
+```
 
-  > Follow below steps if you signed up via **Google/Facebook**
-   - Install the [Cookie-Editor](https://chromewebstore.google.com/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm?hl=en) browser extension. (Cookie-Editor is Free & Open Source)
-   - Run LoginSetup.java file.
-   - Open Cookie-Editor on the tab you logged in to Testable, copy "testable_minds_session" cookie and paste it into terminal.  
+     You'll be asked to pick a login method:
 
-  > Follow below steps if you signed up with **Credentials (Email and Password)**
-  - Run LoginSetup.java file. Follow the displayed instructions.
+   > Choose **[1] Sign in via Credentials** if you signed up with email + password
+   - A browser window opens automatically. Log in normally in that window, then come back to the terminal and press ENTER.
+
+   > Choose **[2] Sign in via Google/Facebook** if that's how you signed up
+   - Install the [Cookie-Editor](https://chromewebstore.google.com/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm?hl=en) browser extension (free & open source).
+   - Log into minds.testable.org normally in your everyday browser.
+   - Open Cookie-Editor on that tab, find the `testable_minds_session` cookie, copy its value.
+   - Paste it into the terminal when prompted.
 
 ## Running it
 
@@ -42,13 +48,13 @@ From the project folder:
 mvn compile exec:java -Dexec.mainClass=com.notifier.TestableNotifier
 ```
 
-Leave this running in the background. It checks the studies page every 1-2 minutes (randomized) and will show a popup notification when a new study appears.
+Leave this running in the background. It checks the studies page every 40 seconds (randomized) and will show a popup notification when a new study appears.
 
 To stop it, press Ctrl+C in the terminal.
 
 ## When cookies expire
 
-If you see `Session expired` in the console, your login session ran out. Just repeat the cookie export step above.
+If you see `Session expired` in the console, your login session ran out. Just repeat the LoginSetup step above.
 
 ## Notes
 
